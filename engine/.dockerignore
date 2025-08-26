@@ -1,0 +1,12 @@
+# Ignore environment files
+.env*
+
+# Ignore miscellaneous files
+.DS_Store
+.git
+.gitignore
+
+# Ignore modules and build files
+dist
+build
+node_modules

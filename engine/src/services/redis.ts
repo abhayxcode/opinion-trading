@@ -1,0 +1,90 @@
+import { createClient } from "redis";
+import { ORDERBOOK } from "../config/globals";
+import { queueName } from "../config/constants";
+import { matchEndpoint } from "../routes/app.router";
+import dotenv from "dotenv";
+dotenv.config();
+
+/**
+ * Publisher for pub sub
+ */
+export const publisher = createClient({
+  url: process.env.REDIS_URL || "redis://localhost:6379",
+});
+
+/**
+ * Queue consumer
+ */
+const consumer = createClient({
+  url: process.env.REDIS_URL || "redis://localhost:6379",
+});
+
+/**
+ * Connect to redis
+ */
+export const connectToRedis = async () => {
+  try {
+    await publisher.connect();
+    await consumer.connect();
+
+    // Pulling from the queue (Queue consumer)
+    pullFromQueue(queueName);
+    console.log("Connected to Redis");
+  } catch (error) {
+    console.error("Failed to connect to REdis");
+  }
+};
+
+/**
+ * Pulling from the queue (Queue consumer)
+ */
+export const pullFromQueue = async (queueName: string) => {
+  while (true) {
+    const payload = await consumer.brPop(queueName, 0);
+
+    if (payload) {
+      const data = JSON.parse(payload.element);
+      matchEndpoint(data);
+    }
+  }
+};
+
+/**
+ * Publish orderbook on the pubsub
+ */
+export const publishOrderbook = async (eventId: string) => {
+  try {
+    if (ORDERBOOK[eventId]) {
+      const orderbook = getOrderBookByEvent(eventId);
+      await publisher.publish(eventId, JSON.stringify(orderbook));
+    }
+    return;
+  } catch (err) {
+    console.log(err);
+    return;
+  }
+};
+
+/**
+ * Get orderbook by event
+ */
+const getOrderBookByEvent = (eventId: string) => {
+  let orderbook;
+  const symbolExists = ORDERBOOK[eventId];
+
+  // Converting the orderbook of a particular symbol into the desired structure
+  if (symbolExists) {
+    orderbook = Object.fromEntries(
+      Object.entries(symbolExists).map(([type, ordersMap]) => {
+        const orders = Array.from(ordersMap).map(([price, orders]) => {
+          return { price, quantity: orders.total };
+        });
+        return [[type], orders];
+      })
+    );
+  } else {
+    orderbook = { eventId: {} };
+  }
+
+  return orderbook;
+};

@@ -1,0 +1,23 @@
+{
+  "name": "websocket",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon --watch src --exec ts-node src/index.ts",
+    "build": "tsc -b",
+    "start": "node dist/index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@types/ws": "^8.5.12",
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "redis": "^4.7.0",
+    "ws": "^8.18.0"
+  }
+}
